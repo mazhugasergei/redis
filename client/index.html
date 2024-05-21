@@ -14,7 +14,10 @@
           document.getElementById("id").innerText = JSON.stringify(data)
           console.log(data)
         })
-        .catch((err) => console.log(err))
+        .catch((err) => {
+          console.log(err)
+          document.getElementById("id").innerText = JSON.stringify(err.message)
+        })
     </script>
   </body>
 </html>
