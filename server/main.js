@@ -1,24 +1,25 @@
-import { createClient as createRedisClient } from "redis"
-import express from "express"
+import { redis, app } from "."
 
-const redis = createRedisClient()
-const app = express()
-app.use(express.json())
-
-const main = async () => {
+export const main = async () => {
   try {
     await redis.connect()
     console.log(`\x1b[7m\x1b[31m[Redis]\x1b[0m Connected`)
 
     app.get("/", async (req, res) => {
       try {
-        // Create 100 sample JSON objects
-        for (let i = 0; i < 100; i++) await redis.json.set(`myjson:${i}`, "$", { key: i })
+        const data = await redis.get("data")
+        if (data)
+          return res.status(200).json({
+            fromChache: true,
+            data,
+          })
 
-        const keys = await redis.keys("myjson:*")
-
-        const data = await Promise.all(keys.map((key) => redis.json.get(key)))
-        return res.json(data)
+        const newData = new Date().toISOString().slice(0, 19).replace("T", " ")
+        await redis.set("data", newData, { EX: 10, NX: true })
+        return res.status(200).json({
+          fromChache: false,
+          data: newData,
+        })
       } catch (err) {
         console.error(err)
         return res.status(500).send("Internal Server Error")
@@ -35,5 +36,3 @@ const main = async () => {
     console.log(`\x1b[7m\x1b[31m[Redis]\x1b[0m Disconnected`)
   }
 }
-
-main()
