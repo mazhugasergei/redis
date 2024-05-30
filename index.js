@@ -9,6 +9,8 @@ app.use((req, res, next) => {
   next()
 })
 
+const EX = 10
+
 const main = async () => {
   try {
     await redis.connect()
@@ -22,14 +24,16 @@ const main = async () => {
           return res.status(200).json({
             fromChache: true,
             data,
+            timeLeft: EX - new Date(Date.now() - new Date(data).getTime()).getSeconds(),
           })
 
         // if data is not in cache, fetch it
         const newData = new Date().toISOString().slice(0, 19).replace("T", " ") // imagine some data is fetched here
-        await redis.set("data", newData, { EX: 10, NX: true })
+        await redis.set("data", newData, { EX, NX: true })
         return res.status(200).json({
           fromChache: false,
           data: newData,
+          timeLeft: EX,
         })
       } catch (err) {
         console.error(err)
